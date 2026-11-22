@@ -97,4 +97,4 @@ def test_site_payload_and_html(tmp_path, result):
     html = path.read_text("utf-8")
     raw = html.split('<script id="data" type="application/json">')[1].split("</script>")[0]
     assert json.loads(raw)["markets"] == p["markets"]
-    assert "USPAP" in html and "—" not in html and "__DATA__" not in html
+    assert "USPAP" in html and chr(0x2014) not in html and "__DATA__" not in html
