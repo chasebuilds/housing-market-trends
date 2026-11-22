@@ -5,6 +5,8 @@
 
 **Live dashboard: https://chasebuilds.github.io/housing-market-trends/**
 
+[![Live dashboard preview](docs/preview.png)](https://chasebuilds.github.io/housing-market-trends/)
+
 Market-conditions analysis for appraisers, agents and assessors. It turns a sales and listings history into monthly metrics by market and price band, estimates a time-adjustment rate with a 95% confidence band, and writes a plain-English read: prices increasing, stable or declining, with the evidence.
 
 > **Analysis and education tool, not an appraisal.** A USPAP-compliant appraisal requires a licensed or certified appraiser. Nothing here replaces that, and the demo data is synthetic.
