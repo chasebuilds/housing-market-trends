@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Housing Market Trends</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --wall: #cdb9a3; --wall-2: #e9ddcf; --floor: #b89a80; --glow: #fff6e6;
+  --ink: #2a2019; --ink-2: rgba(42,32,25,.68); --ink-3: rgba(42,32,25,.4);
+  --glass: rgba(255,250,244,.28); --edge: rgba(255,255,255,.6); --card: rgba(255,252,248,.58); --card-hi: rgba(255,255,255,.8);
+  --shadow: rgba(70,40,20,.22); --solid: #2a2019; --solid-fg: #fbf5ee;
+  --up: #1f9a72; --up-bg: rgba(31,154,114,.16); --down: #c8452c; --down-bg: rgba(226,88,58,.16); --flat: #7a6a5a; --flat-bg: rgba(122,106,90,.16);
+  --c1: #c8452c; --c2: #2f6f9f; --c3: #6f7f52; --c4: #a8670f; --grid: rgba(42,32,25,.1);
+  --f-ui: "Onest","Segoe UI",system-ui,sans-serif; --f-num: "Geist Mono",ui-monospace,"Cascadia Mono",monospace;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --wall: #2a1f19; --wall-2: #3b2c22; --floor: #241a14; --glow: #ffb867;
+  --ink: #f6ece2; --ink-2: rgba(246,236,226,.72); --ink-3: rgba(246,236,226,.4);
+  --glass: rgba(34,24,18,.4); --edge: rgba(255,255,255,.16); --card: rgba(48,36,28,.6); --card-hi: rgba(70,54,42,.8);
+  --shadow: rgba(0,0,0,.45); --solid: #f6ece2; --solid-fg: #2a2019;
+  --up: #4fd1a1; --up-bg: rgba(79,209,161,.16); --down: #ff8a6a; --down-bg: rgba(255,122,85,.18); --flat: #cdb9a3; --flat-bg: rgba(205,185,163,.16);
+  --c1: #ff8a6a; --c2: #6fb4e6; --c3: #a8c27a; --c4: #f0b45a; --grid: rgba(246,236,226,.12); color-scheme: dark; } }
+* { box-sizing: border-box }
+body { margin: 0; min-height: 100vh; color: var(--ink); font: 14px/1.5 var(--f-ui); -webkit-font-smoothing: antialiased;
+  background: radial-gradient(60% 50% at 78% 12%, var(--glow), transparent 70%), linear-gradient(180deg, var(--wall-2), var(--wall) 62%, var(--floor)); background-attachment: fixed }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; letter-spacing: -.02em }
+.app { max-width: 1180px; margin: 0 auto; padding: 18px 16px 48px; display: flex; flex-direction: column; gap: 14px }
+.glass { background: var(--glass); -webkit-backdrop-filter: blur(26px) saturate(150%); backdrop-filter: blur(26px) saturate(150%);
+  border: 1px solid var(--edge); box-shadow: inset 0 1px 0 var(--edge), 0 24px 60px -20px var(--shadow) }
+.card { background: var(--card); border: 1px solid var(--edge); border-radius: 18px; box-shadow: inset 0 1px 0 var(--edge) }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 999px }
+.bar .brand { font-weight: 600; padding: 0 10px; white-space: nowrap }
+.bar .sp { flex: 1 }
+label.pill { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-2); padding: 4px 6px 4px 12px; border-radius: 999px; background: var(--card) }
+select, button { font: inherit; font-size: 13px; color: var(--ink); border: 0; border-radius: 999px; padding: 6px 12px; background: var(--card-hi); cursor: pointer }
+button.solid { background: var(--solid); color: var(--solid-fg); font-weight: 600 }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--c2); outline-offset: 2px }
+.stage { border-radius: 28px; padding: clamp(16px, 3vw, 28px); display: flex; flex-direction: column; gap: 14px }
+h1 { margin: 0; font-size: clamp(24px, 3.4vw, 32px); font-weight: 600; letter-spacing: -.025em }
+.sub { margin: 4px 0 0; color: var(--ink-2); max-width: 70ch }
+.warn { padding: 10px 14px; border-radius: 14px; background: var(--down-bg); color: var(--ink); font-size: 13px }
+.summary { padding: 18px 20px; display: grid; gap: 8px }
+.badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 12px; border-radius: 999px; width: fit-content; text-transform: uppercase; letter-spacing: .04em }
+.badge.increasing { background: var(--up-bg); color: var(--up) } .badge.declining { background: var(--down-bg); color: var(--down) }
+.badge.stable, .badge.insufficient { background: var(--flat-bg); color: var(--flat) }
+.summary h2 { margin: 0; font-size: 18px; font-weight: 600 }
+.summary ul { margin: 0; padding-left: 18px; color: var(--ink-2) }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px }
+.tile { padding: 14px 16px; display: flex; flex-direction: column; gap: 4px }
+.tile .lbl { font-size: 12px; color: var(--ink-2) } .tile .big { font-size: 26px; font-weight: 500 }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 14px }
+.chart { padding: 14px 14px 6px; min-width: 0 }
+.chart h3 { margin: 0 0 2px 6px; font-size: 14px; font-weight: 600 }
+.chart p { margin: 0 0 0 6px; font-size: 12px; color: var(--ink-2) }
+.plot { height: 270px } .chart.wide { grid-column: 1 / -1 } .chart.wide .plot { height: 320px }
+.foot { color: var(--ink-2); font-size: 12px; padding: 0 6px }
+.foot a { color: inherit }
+@media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)) } .bar { border-radius: 24px } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar glass">
+    <span class="brand">Chase Builds / Housing Market Trends</span>
+    <span class="sp"></span>
+    <label class="pill">Market <select id="market"></select></label>
+    <label class="pill">Price band <select id="band"></select></label>
+    <label class="pill">As of <select id="month"></select></label>
+  </header>
+  <main class="stage glass">
+    <div>
+      <h1>Market conditions</h1>
+      <p class="sub">Monthly metrics, a time-adjustment rate with a 95% confidence band, and a plain-English read of whether prices are rising, stable or falling. All data here is synthetic with planted trends.</p>
+    </div>
+    <div class="warn" id="disclaimer"></div>
+    <section class="summary card" id="summary" aria-live="polite"></section>
+    <section class="tiles" id="tiles"></section>
+    <section class="charts" id="charts"></section>
+    <div class="bar" style="padding:0;background:none;box-shadow:none;border:0;backdrop-filter:none">
+      <button class="solid" id="dl-sel">Download this market and band (CSV)</button>
+      <button id="dl-all">Download everything (CSV)</button>
+    </div>
+    <p class="foot">Closed sales are banded by sale price; active and pending listings by list price. Months of inventory = active listings at month end / closed sales in the month. The dotted line on the rate chart is the planted truth and exists only because the data is synthetic.
+    Source and method: <a href="https://github.com/chasebuilds/housing-market-trends">github.com/chasebuilds/housing-market-trends</a> (MIT).</p>
+  </main>
+</div>
+<script src="__PLOTLY_URL__"></script>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+"use strict";
+const D = JSON.parse(document.getElementById("data").textContent);
+const $ = id => document.getElementById(id);
+const state = { market: D.markets[0], band: D.bands[0], mi: D.months.length - 1 };
+const money = v => v == null ? "n/a" : "$" + Math.round(v).toLocaleString("en-US");
+const pct = v => v == null ? "n/a" : (v >= 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const key = () => state.market + "|" + state.band;
+
+function fillSelect(el, items, sel) {
+  el.innerHTML = "";
+  items.forEach((t, i) => { const o = document.createElement("option"); o.value = i; o.textContent = t; if (i === sel) o.selected = true; el.appendChild(o); });
+}
+fillSelect($("market"), D.markets, 0);
+fillSelect($("band"), D.bands, 0);
+fillSelect($("month"), D.months, state.mi);
+$("market").onchange = e => { state.market = D.markets[+e.target.value]; render(); };
+$("band").onchange = e => { state.band = D.bands[+e.target.value]; render(); };
+$("month").onchange = e => { state.mi = +e.target.value; render(); };
+$("disclaimer").textContent = D.disclaimer;
+
+function renderSummary() {
+  const s = D.summaries[key()][D.months[state.mi]];
+  const el = $("summary");
+  el.innerHTML = "";
+  const b = document.createElement("span");
+  const cond = s ? s.condition : "insufficient data";
+  b.className = "badge " + cond.split(" ")[0]; b.textContent = cond; el.appendChild(b);
+  const h = document.createElement("h2");
+  h.textContent = s ? s.headline : "Time-adjustment needs 12 months of sales; pick a later month.";
+  el.appendChild(h);
+  if (s) { const ul = document.createElement("ul"); s.evidence.forEach(t => { const li = document.createElement("li"); li.textContent = t; ul.appendChild(li); }); el.appendChild(ul); }
+}
+
+function renderTiles() {
+  const m = D.metrics[key()], i = state.mi;
+  const t = [["Closed sales", m.closed[i] ?? "n/a"], ["Median price", money(m.median_price[i])],
+    ["Months of inventory", m.months_of_inventory[i] == null ? "n/a" : m.months_of_inventory[i].toFixed(1)],
+    ["Median days on market", m.median_dom[i] == null ? "n/a" : Math.round(m.median_dom[i])]];
+  $("tiles").innerHTML = "";
+  t.forEach(([l, v]) => { const d = document.createElement("div"); d.className = "tile card";
+    d.innerHTML = '<span class="lbl"></span><span class="big num"></span>'; d.children[0].textContent = l + " (" + D.months[i] + ")"; d.children[1].textContent = v; $("tiles").appendChild(d); });
+}
+
+const CHARTS = [
+  { id: "price", title: "Sale price", note: "Median and mean of closed sales" },
+  { id: "ppsf", title: "Price per sq ft", note: "Median of closed sales" },
+  { id: "stl", title: "Sale-to-list ratio", note: "Median sale price / list price" },
+  { id: "dom", title: "Days on market", note: "Median, listing to contract" },
+  { id: "inv", title: "Inventory and sales", note: "Active and pending at month end, closed in month" },
+  { id: "moi", title: "Months of inventory and absorption", note: "Under 4 favors sellers, over 6 favors buyers" },
+  { id: "rate", title: "Time-adjustment rate", note: "Annual change, trailing 12 months, 95% band" },
+];
+CHARTS.forEach(c => { const d = document.createElement("div"); d.className = "chart card" + (c.id === "rate" ? " wide" : "");
+  d.innerHTML = '<h3></h3><p></p><div class="plot" id="p-' + c.id + '"></div>'; d.children[0].textContent = c.title; d.children[1].textContent = c.note; $("charts").appendChild(d); });
+
+function layout(extra) {
+  const ink = css("--ink-2"), grid = css("--grid");
+  return Object.assign({ margin: { l: 56, r: 12, t: 8, b: 32 }, paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+    font: { family: css("--f-ui"), size: 11, color: ink }, legend: { orientation: "h", y: -0.18 },
+    xaxis: { gridcolor: grid, nticks: 8 }, yaxis: { gridcolor: grid, zeroline: false }, hovermode: "x unified",
+    shapes: [{ type: "line", xref: "x", yref: "paper", x0: D.months[state.mi], x1: D.months[state.mi], y0: 0, y1: 1, line: { color: ink, width: 1, dash: "dot" } }] }, extra || {});
+}
+const line = (name, y, color, extra) => Object.assign({ x: D.months, y, name, type: "scatter", mode: "lines", line: { color, width: 2 }, connectgaps: false }, extra || {});
+
+function renderCharts() {
+  const m = D.metrics[key()], a = D.adj[key()], c = [css("--c1"), css("--c2"), css("--c3"), css("--c4")];
+  const cfg = { displayModeBar: false, responsive: true };
+  const draw = (id, traces, extra) => Plotly.react("p-" + id, traces, layout(extra), cfg);
+  draw("price", [line("Median", m.median_price, c[0]), line("Mean", m.mean_price, c[1], { line: { color: c[1], width: 1.5, dash: "dash" } })], { yaxis: { tickprefix: "$", gridcolor: css("--grid") } });
+  draw("ppsf", [line("Median $/sq ft", m.median_ppsf, c[2])], { yaxis: { tickprefix: "$", gridcolor: css("--grid") } });
+  draw("stl", [line("Sale-to-list", m.sale_to_list, c[3])], { yaxis: { tickformat: ".1%", gridcolor: css("--grid") } });
+  draw("dom", [line("Median days", m.median_dom, c[1])]);
+  draw("inv", [line("Active", m.active, c[0]), line("Pending", m.pending, c[3]), line("Closed", m.closed, c[2])]);
+  draw("moi", [line("Months of inventory", m.months_of_inventory, c[0]), line("Absorption rate", m.absorption_rate, c[2], { yaxis: "y2" })],
+    { yaxis2: { overlaying: "y", side: "right", tickformat: ".0%", showgrid: false }, margin: { l: 44, r: 44, t: 8, b: 32 } });
+  const band = (name, s, color) => [
+    { x: D.months, y: s.hi, type: "scatter", mode: "lines", line: { width: 0 }, showlegend: false, hoverinfo: "skip", connectgaps: false },
+    { x: D.months, y: s.lo, type: "scatter", mode: "lines", line: { width: 0 }, fill: "tonexty", fillcolor: color + "33", showlegend: false, hoverinfo: "skip", connectgaps: false },
+    line(name, s.annual, color)];
+  const traces = [...band("Time regression", a.hedonic, c[0]), ...band("Paired resales", a.paired, c[1])];
+  if (state.band === D.bands[0]) traces.push(line("Planted truth (synthetic)", D.truth[state.market], css("--ink-2"), { line: { color: css("--ink-2"), width: 1.5, dash: "dot" } }));
+  draw("rate", traces, { yaxis: { tickformat: ".0%", gridcolor: css("--grid"), zerolinecolor: css("--ink-3"), zeroline: true } });
+}
+
+function csvRows(markets, bands) {
+  const head = ["market", "band", "month", "closed", "median_price", "mean_price", "median_ppsf", "sale_to_list", "median_dom", "active", "pending",
+    "absorption_rate", "months_of_inventory", "hedonic_n", "hedonic_annual", "hedonic_lo", "hedonic_hi", "paired_n", "paired_annual", "paired_lo", "paired_hi", "condition"];
+  const out = [head.join(",")];
+  const f = v => v == null ? "" : String(v);
+  markets.forEach(mk => bands.forEach(bd => {
+    const k = mk + "|" + bd, m = D.metrics[k], a = D.adj[k];
+    D.months.forEach((mo, i) => {
+      const s = D.summaries[k][mo];
+      out.push([mk, '"' + bd + '"', mo, m.closed[i], m.median_price[i], m.mean_price[i], m.median_ppsf[i], m.sale_to_list[i], m.median_dom[i], m.active[i], m.pending[i],
+        m.absorption_rate[i], m.months_of_inventory[i], a.hedonic.n[i], a.hedonic.annual[i], a.hedonic.lo[i], a.hedonic.hi[i], a.paired.n[i], a.paired.annual[i], a.paired.lo[i], a.paired.hi[i],
+        s ? s.condition : ""].map(f).join(","));
+    });
+  }));
+  return out.join("\n") + "\n";
+}
+function download(name, text) {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+  const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+$("dl-sel").onclick = () => download("housing-trends-" + state.market.toLowerCase().replace(/\W+/g, "-") + "-" + state.band.toLowerCase().replace(/\W+/g, "-") + ".csv", csvRows([state.market], [state.band]));
+$("dl-all").onclick = () => download("housing-trends-all.csv", csvRows(D.markets, D.bands));
+
+function render() { renderSummary(); renderTiles(); renderCharts(); }
+render();
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
+window.__hmt = { state, csvRows, D };
+</script>
+</body>
+</html>
