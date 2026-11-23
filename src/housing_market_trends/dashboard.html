@@ -50,6 +50,9 @@ h1 { margin: 0; font-size: clamp(24px, 3.4vw, 32px); font-weight: 600; letter-sp
 .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px }
 .tile { padding: 14px 16px; display: flex; flex-direction: column; gap: 4px }
 .tile .lbl { font-size: 12px; color: var(--ink-2) } .tile .big { font-size: 26px; font-weight: 500 }
+.calc { padding: 16px 20px; display: grid; gap: 8px } .calc h3 { margin: 0; font-size: 15px } .calc .note { margin: 0; font-size: 12px; color: var(--ink-2) }
+.calcrow { display: flex; flex-wrap: wrap; gap: 10px } #calc-out { font-size: 15px }
+input { font: inherit; font-size: 13px; color: var(--ink); border: 0; border-radius: 999px; padding: 6px 12px; background: var(--card-hi); width: 130px }
 .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 14px }
 .chart { padding: 14px 14px 6px; min-width: 0 }
 .chart h3 { margin: 0 0 2px 6px; font-size: 14px; font-weight: 600 }
@@ -72,17 +75,26 @@ h1 { margin: 0; font-size: clamp(24px, 3.4vw, 32px); font-weight: 600; letter-sp
   <main class="stage glass">
     <div>
       <h1>Market conditions</h1>
-      <p class="sub">Monthly metrics, a time-adjustment rate with a 95% confidence band, and a plain-English read of whether prices are rising, stable or falling. All data here is synthetic with planted trends.</p>
+      <p class="sub">Monthly metrics, a time-adjustment rate with a 95% confidence band, and a plain-English read of whether prices are rising, stable or falling. <span id="datanote"></span></p>
     </div>
     <div class="warn" id="disclaimer"></div>
     <section class="summary card" id="summary" aria-live="polite"></section>
     <section class="tiles" id="tiles"></section>
+    <section class="calc card" id="calc">
+      <h3>Comparable time adjustment</h3>
+      <p class="note">Moves a comparable's sale price from its sale month to the as-of month using the time-regression rate shown above (paired resales if the regression has too few sales). Compounded monthly. Ask a licensed appraiser to apply it to a real assignment.</p>
+      <div class="calcrow">
+        <label class="pill">Comp sold <select id="comp"></select></label>
+        <label class="pill">Comp price <input id="compprice" type="number" min="0" step="1000" placeholder="optional"></label>
+      </div>
+      <div id="calc-out" aria-live="polite"></div>
+    </section>
     <section class="charts" id="charts"></section>
     <div class="bar" style="padding:0;background:none;box-shadow:none;border:0;backdrop-filter:none">
       <button class="solid" id="dl-sel">Download this market and band (CSV)</button>
       <button id="dl-all">Download everything (CSV)</button>
     </div>
-    <p class="foot">Closed sales are banded by sale price; active and pending listings by list price. Months of inventory = active listings at month end / closed sales in the month. The dotted line on the rate chart is the planted truth and exists only because the data is synthetic.
+    <p class="foot">Closed sales are banded by sale price; active and pending listings by list price. Months of inventory = active listings at month end / closed sales in the month.<span id="truthnote"> The dotted line on the rate chart is the planted truth and exists only because the data is synthetic.</span>
     Source and method: <a href="https://github.com/chasebuilds/housing-market-trends">github.com/chasebuilds/housing-market-trends</a> (MIT).</p>
   </main>
 </div>
@@ -170,7 +182,7 @@ function renderCharts() {
     { x: D.months, y: s.lo, type: "scatter", mode: "lines", line: { width: 0 }, fill: "tonexty", fillcolor: color + "33", showlegend: false, hoverinfo: "skip", connectgaps: false },
     line(name, s.annual, color)];
   const traces = [...band("Time regression", a.hedonic, c[0]), ...band("Paired resales", a.paired, c[1])];
-  if (state.band === D.bands[0]) traces.push(line("Planted truth (synthetic)", D.truth[state.market], css("--ink-2"), { line: { color: css("--ink-2"), width: 1.5, dash: "dot" } }));
+  if (D.synthetic && state.band === D.bands[0]) traces.push(line("Planted truth (synthetic)", D.truth[state.market], css("--ink-2"), { line: { color: css("--ink-2"), width: 1.5, dash: "dot" } }));
   draw("rate", traces, { yaxis: { tickformat: ".0%", gridcolor: css("--grid"), zerolinecolor: css("--ink-3"), zeroline: true } });
 }
 
@@ -197,7 +209,28 @@ function download(name, text) {
 $("dl-sel").onclick = () => download("housing-trends-" + state.market.toLowerCase().replace(/\W+/g, "-") + "-" + state.band.toLowerCase().replace(/\W+/g, "-") + ".csv", csvRows([state.market], [state.band]));
 $("dl-all").onclick = () => download("housing-trends-all.csv", csvRows(D.markets, D.bands));
 
-function render() { renderSummary(); renderTiles(); renderCharts(); }
+const adjFactor = (r, m) => Math.pow(1 + r, m / 12) - 1;
+let compIdx = null;
+function renderCalc() {
+  const sel = $("comp"), mi = state.mi;
+  if (compIdx === null || compIdx >= mi) compIdx = Math.max(0, mi - 6);
+  fillSelect(sel, D.months.slice(0, mi), compIdx);
+  const a = D.adj[key()], out = $("calc-out");
+  let m = a.hedonic, name = "time regression";
+  if (m.annual[mi] == null) { m = a.paired; name = "paired resales"; }
+  if (mi === 0 || m.annual[mi] == null) { out.textContent = "Not enough sales in the last 12 months to estimate a rate for this market, band and month."; return; }
+  const months = mi - compIdx, r = m.annual[mi], lo = m.lo[mi], hi = m.hi[mi];
+  const f = adjFactor(r, months), fl = adjFactor(lo, months), fh = adjFactor(hi, months);
+  let t = "Comp sold " + D.months[compIdx] + ", as of " + D.months[mi] + " (" + months + " months): adjust " + pct(f) + " (95% band " + pct(fl) + " to " + pct(fh) + "), using " + name + " " + pct(r) + " a year.";
+  const price = parseFloat($("compprice").value);
+  if (price > 0) t += " Adjusted price " + money(price * (1 + f)) + " (" + money(price * (1 + fl)) + " to " + money(price * (1 + fh)) + ").";
+  out.textContent = t;
+}
+$("comp").onchange = e => { compIdx = +e.target.value; renderCalc(); };
+$("compprice").oninput = renderCalc;
+$("datanote").textContent = D.synthetic ? "All data here is synthetic with planted trends." : "Your data: " + D.listings.toLocaleString("en-US") + " listings, analyzed in this page only.";
+if (!D.synthetic) $("truthnote").style.display = "none";
+function render() { renderSummary(); renderTiles(); renderCalc(); renderCharts(); }
 render();
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
 window.__hmt = { state, csvRows, D };

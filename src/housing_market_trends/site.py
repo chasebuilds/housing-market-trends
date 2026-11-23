@@ -24,7 +24,7 @@ def _clean(v: Any, digits: int) -> float | int | None:
 
 
 def build_payload(res: pipeline.Result) -> dict:
-    months = months_between(pipeline.FIRST_MONTH, pipeline.LAST_MONTH)
+    months = months_between(res.first, res.last)
     markets = list(res.listings["market"].unique())
     bands = [ALL, *BAND_LABELS]
     digits = {"closed": 0, "active": 0, "pending": 0, "median_dom": 1}
@@ -51,8 +51,10 @@ def build_payload(res: pipeline.Result) -> dict:
     for s in res.summaries:
         d = {k: s[k] for k in ("condition", "headline", "evidence", "supply")}
         summaries[f"{s['market']}|{s['band']}"][s["month"]] = d
-    tt = pipeline.truth_table().set_index(["market", "month"])["truth"]
-    truth = {mk: [_clean(tt[(mk, m)], 4) for m in months] for mk in markets}
+    tt = pipeline.truth_table(res.first, res.last).set_index(["market", "month"])["truth"]
+    truth = (
+        {mk: [_clean(tt[(mk, m)], 4) for m in months] for mk in markets} if res.synthetic else {}
+    )
     return {
         "months": months,
         "markets": markets,
@@ -63,6 +65,7 @@ def build_payload(res: pipeline.Result) -> dict:
         "truth": truth,
         "disclaimer": DISCLAIMER,
         "listings": int(len(res.listings)),
+        "synthetic": res.synthetic,
     }
 
 

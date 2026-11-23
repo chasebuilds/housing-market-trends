@@ -65,10 +65,12 @@ def hedonic_time_rate(sales: pd.DataFrame, end: pd.Timestamp) -> Estimate | None
     if n < MIN_SALES:
         return None
     t = (sales["close_date"] - end).dt.days.to_numpy() / DAYS_PER_MONTH
-    age = (sales["close_date"].dt.year - sales["year_built"]).to_numpy(dtype=float)
-    X = np.column_stack(
-        [np.ones(n), np.log(sales["sqft"].to_numpy(dtype=float)), age, sales["beds"], t]
-    )
+    cols = [np.ones(n), np.log(sales["sqft"].to_numpy(dtype=float))]
+    if sales["year_built"].notna().all():  # age and bedrooms are used only when present
+        cols.append((sales["close_date"].dt.year - sales["year_built"]).to_numpy(dtype=float))
+    if sales["beds"].notna().all():
+        cols.append(sales["beds"].to_numpy(dtype=float))
+    X = np.column_stack([*cols, t])
     y = np.log(sales["sale_price"].to_numpy(dtype=float))
     beta, *_ = np.linalg.lstsq(X, y, rcond=None)
     resid = y - X @ beta
@@ -143,3 +145,30 @@ def time_adjustment_series(listings: pd.DataFrame, first: str, last: str) -> pd.
     return pd.DataFrame(
         rows, columns=["market", "band", "month", "method", "n", "annual", "lo", "hi"]
     )
+
+
+def adjustment_factor(annual_rate: float, months: float) -> float:
+    """Fractional change that moves a price across `months` at an annual rate.
+
+    Compounds: (1 + annual) ** (months / 12) - 1. Negative months move a price backwards.
+    """
+    return float((1 + annual_rate) ** (months / 12) - 1)
+
+
+def months_between_labels(sale_month: str, effective_month: str) -> int:
+    """Whole months from the comparable's sale month to the effective-date month."""
+    return (pd.Period(effective_month, freq="M") - pd.Period(sale_month, freq="M")).n
+
+
+def adjust_price(price: float, annual: float, lo: float, hi: float, months: float) -> dict:
+    """Time-adjusted price and the range implied by the rate's 95% band."""
+    f, f_lo, f_hi = (adjustment_factor(r, months) for r in (annual, lo, hi))
+    return {
+        "months": months,
+        "factor": f,
+        "factor_lo": f_lo,
+        "factor_hi": f_hi,
+        "adjusted": price * (1 + f),
+        "adjusted_lo": price * (1 + f_lo),
+        "adjusted_hi": price * (1 + f_hi),
+    }
