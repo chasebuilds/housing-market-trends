@@ -109,3 +109,11 @@ Tests cover every metric with a seven-listing example worked out by hand (March 
 ## License
 
 MIT, Chase Builds. See [LICENSE](LICENSE).
+
+## More from Chase Builds
+
+- **[assessment-ratio-study](https://github.com/chasebuilds/assessment-ratio-study)**: Regressivity, under-assessment and sales chasing caught in 30 of 30 seeded counties. ([live demo](https://chasebuilds.github.io/assessment-ratio-study/))
+- **[valuation-report-builder](https://github.com/chasebuilds/valuation-report-builder)**: One YAML or JSON file to a clean property valuation summary in HTML and PDF, with the math checked first. ([live demo](https://chasebuilds.github.io/valuation-report-builder/))
+- **[data-quality-checks](https://github.com/chasebuilds/data-quality-checks)**: Catches bad data before it reaches a report. 1,784 of 1,800 planted faults caught, 0 false alarms. ([live demo](https://chasebuilds.github.io/data-quality-checks/))
+
+[All projects, sorted by industry](https://github.com/chasebuilds) · [chasebuilds.github.io](https://chasebuilds.github.io)
