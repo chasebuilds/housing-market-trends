@@ -24,6 +24,8 @@ jobs:
           cache: pip
       - run: pip install -e .
       - run: hmt build --out dist
+      - name: Page title, description and share preview
+        run: python3 demo/page_meta.py dist
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
